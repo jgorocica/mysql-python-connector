@@ -33,6 +33,7 @@ import struct
 import datetime
 
 from decimal import Decimal
+from typing import Union
 
 from .constants import (
     FieldFlag, ServerCmd, FieldType, ClientFlag, PARAMETER_COUNT_AVAILABLE)
@@ -456,23 +457,19 @@ class MySQLProtocol(object):
 
         return (packet[length + 1:], value)
 
-    def _parse_binary_time(self, packet, field):
+    def _parse_binary_time(self, packet: Union[list, bytearray], field):
         """Parse a time value from a binary packet"""
-        length = packet[0]
-        data = packet[1:length + 1]
-        mcs = 0
-        if length > 8:
-            mcs = struct.unpack('<I', data[8:])[0]
-        days = struct.unpack('<I', data[1:5])[0]
-        if data[0] == 1:
-            days *= -1
-        tmp = datetime.timedelta(days=days,
-                                 seconds=data[7],
-                                 microseconds=mcs,
-                                 minutes=data[6],
-                                 hours=data[5])
-
-        return (packet[length + 1:], tmp)
+        length = len(packet)
+    
+        if type(packet) == bytearray: 
+            unpacked =  struct.unpack('<Q', packet)
+        else: 
+            unpacked = struct.unpack('<Q', *packet)
+            
+        return (
+            packet[length + 1:],
+            next(datetime.timedelta(microseconds = i / 10) for i in unpacked)
+        )
 
     def _parse_binary_values(self, fields, packet, charset='utf-8'):
         """Parse values from a binary result packet"""
