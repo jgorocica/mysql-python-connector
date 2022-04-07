@@ -456,21 +456,27 @@ class MySQLProtocol(object):
 
         return (packet[length + 1:], value)
 
-    def _parse_binary_time(self, packet, field):
+    def _parse_binary_time(packet):
         """Parse a time value from a binary packet"""
         length = packet[0]
         data = packet[1:length + 1]
         mcs = 0
+        
         if length > 8:
             mcs = struct.unpack('<I', data[8:])[0]
-        days = struct.unpack('<I', data[1:5])[0]
-        if data[0] == 1:
-            days *= -1
+        elif length > 0:
+            days = struct.unpack('<I', data[1:5])[0]
+            if data[0:] == 1:
+                days *= -1
+        else: 
+            # return 0 or whatever that should be handled here... 
+            return (packet[length + 1:], datetime.timedelta(days=0))
+
         tmp = datetime.timedelta(days=days,
-                                 seconds=data[7],
-                                 microseconds=mcs,
-                                 minutes=data[6],
-                                 hours=data[5])
+                                seconds=data[7],
+                                microseconds=mcs,
+                                minutes=data[6],
+                                hours=data[5])
 
         return (packet[length + 1:], tmp)
 
