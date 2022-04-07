@@ -456,7 +456,7 @@ class MySQLProtocol(object):
 
         return (packet[length + 1:], value)
 
-    def _parse_binary_time(packet):
+    def _parse_binary_time(self, packet, field):
         """Parse a time value from a binary packet"""
         length = packet[0]
         data = packet[1:length + 1]
